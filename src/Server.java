@@ -2,14 +2,13 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.Writer;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class Server {
 
@@ -34,6 +33,8 @@ public class Server {
         server.createContext("/", Server::handleRequest);
         server.createContext("/apps/", Server::handleRequestApp);
         server.createContext("/apps/profile",Server::handleRequestProfileApp);
+        server.createContext("/index.html",Server::css);
+        server.createContext("/index.html",Server::html);
     }
 
 
@@ -122,6 +123,49 @@ public class Server {
     private static void writeHeaders(Writer writer, String type, Headers headers) {
         write(writer, type, "");
         headers.forEach((k, v) -> write(writer, "\t" + k, v.toString()));
+    }
+
+    private static void html(HttpExchange exchange) throws IOException {
+        String uri = exchange.getRequestURI().toString();
+        Path path = Path.of("src/homework/" + uri);
+        byte[] cssWay = Files.readAllBytes(path);
+        try {
+            exchange.getResponseHeaders().add("Content-Type", "text/html; charset=utf-8");
+
+            int responseCode = 200;
+            int length = 0;
+            exchange.sendResponseHeaders(responseCode, length);
+
+            try (Writer writer = getWriterFrom(exchange)) {
+                for (byte b: cssWay) {
+                    writer.write(b);
+                }
+                writer.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private static void css(HttpExchange exchange) throws IOException {
+        String uri = exchange.getRequestURI().toString();
+        Path path = Path.of("/src/homework/css" + uri);
+        byte[] cssWay = Files.readAllBytes(path);
+        try {
+            exchange.getResponseHeaders().add("Content-Type", "text/css");
+
+            int responseCode = 200;
+            int length = 0;
+            exchange.sendResponseHeaders(responseCode, length);
+
+            try (Writer writer = getWriterFrom(exchange)) {
+                for (byte b: cssWay) {
+                    writer.write(b);
+                }
+                writer.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }
